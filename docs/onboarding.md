@@ -15,8 +15,12 @@ The flow runs on a **two-layer architecture**: the lifecycle skills (the domain 
 generic engineering discipline to the **[Superpowers](https://github.com/obra/superpowers)** plugin
 (the substrate) via `REQUIRED: superpowers:*` references. It's MIT-licensed, distributed via
 Anthropic's official `claude-plugins-official` marketplace; the only thing it auto-runs is a local
-context-injection hook at session start (no telemetry, no external egress) — pin/review the version
-before bumping.
+context-injection hook at session start (no telemetry, no external egress).
+
+> **Version policy.** Treat the version as **pinned by team convention**: adopt one vetted version,
+> record it, and re-review the session-start hook's diff before bumping. The marketplace install may
+> track latest, so the pin is enforced by your review discipline, not by the tooling — worth being
+> deliberate about for a shared team repo.
 
 Installing it is a one-time, per-machine **user action** — Claude can't do it for you. In `claude`, run:
 

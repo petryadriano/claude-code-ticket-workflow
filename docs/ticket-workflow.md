@@ -128,7 +128,9 @@ Two steps bookend every ticket and keep the whole team's workflow improving:
 - **Start (pull):** Step 0 of `/complete-ticket` and `/review` fast-forwards the shared clone
   if it's behind — one pull updates every workspace at once (the skills are linked in).
 - **End (push):** `improve-skills` proposes skill/script edits and, on your explicit **"open MR"**,
-  opens a gated MR to the shared repo. Once merged, the next Step 0 pull distributes it to everyone.
+  opens a gated MR to the shared repo. The flow's owner reviews every such MR — reconciling conflicting
+  edits from different devs and holding back changes that would shift the flow drastically — and once
+  merged, the next Step 0 pull distributes it to everyone.
 
 ---
 
