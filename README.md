@@ -80,7 +80,7 @@ The flow drafts and checks — it doesn't own the result, **you do**. Skip the r
 
 ## 🧠 It improves itself
 
-Every ticket ends with **`/improve-skills`**. It reviews the session for whatever slowed you down (a command that failed, a step that was ambiguous, a convention it didn't know) and proposes edits to its own skills and scripts. You review the diff, and nothing reaches the team until it goes through an MR like any other change.
+Every ticket ends with **`/improve-skills`**. It reviews the session for whatever slowed you down (a command that failed, a step that was ambiguous, a convention it didn't know) and proposes edits to its own skills and scripts. You review the diff, and nothing reaches the team until it goes through an MR like any other change — reviewed by the flow's owner, who reconciles conflicting edits from different devs and holds back anything that would shift the flow drastically.
 
 ```mermaid
 flowchart LR
@@ -89,7 +89,7 @@ flowchart LR
     C --> A
 ```
 
-> 🧠 **The workflow you clone today isn't the one you'll have next month.** It sharpens as the team uses it.
+> The skills improve through this loop — gated by the owner's review, so the flow sharpens without drifting.
 
 ## ✨ What else it does for you
 
