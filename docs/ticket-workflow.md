@@ -17,18 +17,19 @@ and resumes safely after a `/compact`.
 workflow), then reads `$WORKSPACE_ROOT/.claude/tickets/<ticket>.json`, looks at the `phase`, and
 invokes the right next skill. The path forks on the ticket's issue type:
 
-Every step transition is gated — `/complete-ticket` pauses for a ✋ confirmation before invoking the
-next skill, and the skills themselves stop at their own hard gates (full list at the bottom of this
-doc). The issue type (Story/Defect/Task vs. Spike) only chooses *which* branch runs, not whether a
-gate fires.
+Every step is **gated** — each skill stops at its own hard gate before its result is saved (full list
+at the bottom of this doc), and `/complete-ticket` adds an explicit stop of its own before push: the
+**implementation review + evidence** gate. The issue type (Story/Defect/Task vs. Spike) only chooses
+*which* branch runs, not whether a gate fires.
 
 ```mermaid
 flowchart LR
     CT([📋 /complete-ticket]) --> U{understand}
     U -->|✋ confirm understanding| P[plan]
-    P -->|✋ approve plan| I["implement<br/>+ tests"]
-    I -->|✋ review & continue| PU[push]
-    PU -->|✋ tested & approved| MR([🔀 MR ready<br/>to open])
+    P -->|✋ approve plan| I["implement + tests<br/>+ specs + guide"]
+    I --> V["verify<br/>(run specs → evidence)"]
+    V -->|✋ review evidence,<br/>then approved| PU[push]
+    PU --> MR([🔀 MR ready<br/>to open])
     U -->|✋ Spike| SR["research<br/>+ proposal"]
     SR -->|✋ approve proposal| PUB([📝 proposal published])
     MR --> IM[🧠 improve-skills]
@@ -41,25 +42,62 @@ flowchart LR
 
 ### Implementation lifecycle — Story / Defect / Task
 
-| Phase reached | Skill | What it does | Gate |
-|---|---|---|---|
-| `understood` | **understand-ticket** | Fetches the ticket; reads **all** ACs, comments, attachments, and the full epic; resolves dependencies (hard-stops on blockers); saves a summary. | You confirm the understanding. |
-| `planned` | **plan-ticket** | Syncs repos, explores the codebase guided by the ticket context, checks for reusable code, builds a file-by-file plan with an AC-coverage map. | You sign off AC coverage **AC-by-AC**, then approve the plan — before any code is written. |
-| `implemented` | **implement-ticket** | Applies every planned change, writes/updates unit tests, runs a build check, validates every AC, and self-reviews. | No hard stop of its own (HIGH findings auto-fixed) — but MEDIUM self-review findings need your call, and `/complete-ticket` shows the AC/self-review results and asks before moving to push. |
-| `shipped` | **push-ticket** | Builds a manual test checklist covering **every AC** — setup, action, and expected result for each, plus a separate **negative case** for every filter/exclusion AC. After you reply **"tested and approved"**, it branches, stages only the changed files, commits, pushes, and outputs the MR URL + a paste-ready description. | Test and approve before anything is committed or pushed. |
-| (after) | **improve-skills** | Reflects on the session and proposes improvements to the skills/scripts — and can open a gated MR to share them with the team. | "open MR" to share. |
+Each step keeps its full domain behaviour; the **Delegates to** column names the [Superpowers](https://github.com/obra/superpowers) discipline (the *substrate*) it leans on for the generic engineering work, instead of re-deriving it inline. See [Engineering substrate](#engineering-substrate-superpowers) below for the why.
+
+| Phase reached | Skill | What it does | Delegates to (substrate) | Gate |
+|---|---|---|---|---|
+| `understood` | **understand-ticket** | Fetches the ticket; reads **all** ACs, comments, attachments, and the full epic; resolves dependencies (hard-stops on blockers); captures the test scope (environment · identity · data); saves a summary. | `brainstorming` (surface requirement/ambiguity before planning) · `verification-before-completion` (mark a source read only with the evidence) · `systematic-debugging` (root-cause a failed fetch) · `dispatching-parallel-agents` (fan out related-ticket reads) | You confirm the understanding. |
+| `planned` | **plan-ticket** | Syncs repos, explores the codebase guided by the ticket context, checks for reusable code, traces whether the change is even needed (if a layer already produces the result, it isn't planned), builds a file-by-file plan with an AC-coverage map. | `writing-plans` (plan construction) · `brainstorming` (design exploration) · `verification-before-completion` (every contract bound to real code) | You sign off AC coverage **AC-by-AC**, then approve the plan — before any code is written. |
+| `implemented` | **implement-ticket** | Applies every planned change **test-first**, runs a build check, validates every AC, self-reviews — then authors the **verification**: classifies each scenario **AUTO** (an end-to-end spec covering every AC + a negative case per filter/exclusion AC) or **MANUAL** (a guide item for what can't be automated), and builds a **coverage matrix**. | `test-driven-development` (RED-GREEN-REFACTOR, **test-first**) · `systematic-debugging` (build/test failures) · `verification-before-completion` (no "done" without evidence) | Auto-advances to verify. |
+| `implemented` (verified) | **verify-ticket** | Runs the AUTO specs against your running local stack, exercises destructive cases under per-scenario approval, checks the coverage matrix, and emits the **evidence pack** (report + replayable traces + per-AC verdicts). A PASS only counts when reverting the change turns the spec **red** (a negative control). | `verification-before-completion` (the honesty principle behind the evidence engine) · `systematic-debugging` (spec failures) | `/complete-ticket` shows AC/self-review results **+ the evidence pack + remaining manual items** — you reply **"evidence reviewed and approved"** before push. |
+| `shipped` | **push-ticket** | Confirms the verification approval, then branches, stages only the changed files, commits, pushes, and outputs the MR URL + a paste-ready description. | `verification-before-completion` (the approval gate / lock) · `systematic-debugging` (build/sync/rebase failures) | Nothing is committed or pushed without "evidence reviewed and approved". |
+| (after) | **improve-skills** | Reflects on the session and proposes improvements to the skills/scripts — and can open a gated MR to share them with the team. | `writing-skills` (governs every skill edit — an edit needs a failing baseline first) · `systematic-debugging` · `verification-before-completion` | "open MR" to share. |
 
 ### Spike lifecycle — Spike issue type
 
 When `understand-ticket` sees the issue type is a Spike, the deliverable is a **researched proposal**,
 not code or an MR:
 
-| Phase reached | Skill | What it does |
+| Phase reached | Skill | What it does | Delegates to (substrate) |
+|---|---|---|---|
+| `understood` | **understand-ticket** | Spike-aware: captures the **research question** from the description + parent epic (ACs not required). | Same as the implementation lifecycle. |
+| `researched` | **spike-ticket** (Phase A) | Syncs repos, researches the codebase grounded in the epic, verifies each load-bearing fact against real code, and produces a structured proposal (goal · current state · recommended approach · proposed child tickets · coverage · open questions · risks · estimates). | `brainstorming` (research/design — minus its code-implementation tail; a spike ends at the proposal) · `systematic-debugging` · `verification-before-completion` (each fact bound to real code). |
+| `published` | **spike-ticket** (Phase B) | Helps publish the proposal — as a tracker comment, a wiki page, and/or draft child tickets. Default is "you paste it"; auto-create via the tracker's MCP is opt-in, **per item** (every tracker write needs its own yes). | (publish handoff — keeps the per-item tracker-write safety contract). |
+| (after) | **improve-skills** | Same reflection step. | `writing-skills` · `systematic-debugging` · `verification-before-completion`. |
+
+---
+
+### Engineering substrate (Superpowers)
+
+The flow above is unchanged — same steps, same gates, same domain machinery. What changed underneath
+is *where the generic engineering discipline lives*: each skill **delegates** it to a matching
+[Superpowers](https://github.com/obra/superpowers) skill (the *substrate*) rather than re-deriving it
+inline. The skill keeps the domain-specific layer (the plan schema, the AC-by-AC gate, the evidence
+pack, the git/branch/MR procedure); the substrate supplies the underlying discipline. Each skill
+records exactly what it leans on in its own **"## Required disciplines (Superpowers substrate)"** block.
+
+| Step | Substrate skill(s) it delegates to | Domain layer it keeps |
 |---|---|---|
-| `understood` | **understand-ticket** | Spike-aware: captures the **research question** from the description + parent epic (ACs not required). |
-| `researched` | **spike-ticket** (Phase A) | Syncs repos, researches the codebase grounded in the epic, verifies each load-bearing fact against real code, and produces a structured proposal (goal · current state · recommended approach · proposed child tickets · coverage · open questions · risks · estimates). |
-| `published` | **spike-ticket** (Phase B) | Helps publish the proposal — as a tracker comment, a wiki page, and/or draft child tickets. Default is "you paste it"; auto-create via the tracker's MCP is opt-in, **per item** (every tracker write needs its own yes). |
-| (after) | **improve-skills** | Same reflection step. |
+| **understand-ticket** | `brainstorming`, `verification-before-completion`, `systematic-debugging`, `dispatching-parallel-agents` | Multi-source fetch, dependency rules, test-scope capture, the understanding gate. |
+| **plan-ticket** | `writing-plans`, `brainstorming`, `verification-before-completion` | AC-by-AC gate, plan schema, the "is the change even needed?" trace. |
+| **implement-ticket** | `test-driven-development` (**test-first**), `systematic-debugging`, `verification-before-completion` | Security-by-default, the AUTO/MANUAL + coverage-matrix authoring. |
+| **verify-ticket** | `verification-before-completion`, `systematic-debugging` | Evidence pack/portal, negative control, destructive/DB-write approval. |
+| **push-ticket** | `verification-before-completion`, `systematic-debugging` | Approval gate/lock, branch + MR plumbing. |
+| **review · address-review** | `requesting-`/`receiving-code-review`, `verification-before-completion`, `systematic-debugging` | MR-vs-AC mapping, conventions checklist, additive/squash re-push. |
+| **improve-skills** | `writing-skills`, `systematic-debugging`, `verification-before-completion` | Linkage/freshen checks, the share gate. |
+
+Two principles travel with the substrate and are worth lifting on their own:
+
+- **A green gate is necessary, not sufficient.** Before approving completed work, confirm the depth
+  checks actually *ran* (produced output, not a ticked box) — and when a known-good reference exists,
+  **diff the produced work against it.** A passing gate over an unexamined diff is process theatre.
+- **Progressive disclosure.** Skills keep their bodies lean by pushing heavy reference material (long
+  checklists, exact API params, error-vs-noise tables) into sibling docs read on demand — so the
+  always-loaded prompt carries only its gates and control flow, never the lookup tables.
+
+> **The git model is unchanged.** The flow stays **branch-per-repo + MR, with no git worktrees** —
+> Superpowers' worktree and branch-finishing skills were deliberately **not** adopted. The delegation
+> is about *engineering discipline*, not git topology.
 
 ---
 
@@ -96,16 +134,17 @@ Two steps bookend every ticket and keep the whole team's workflow improving:
 
 ## Standalone skills (run directly, outside the lifecycle)
 
-| Skill | Usage | What it does |
-|---|---|---|
-| **sync-repos** | `/sync-repos [api web …]` | Clones any missing repo, then syncs all to their default branch. Dirty changes are auto-stashed and restored. Reports a per-repo status table. |
-| **new-branch** | `/new-branch …` | Creates the feature/bugfix branch across the affected repos, following the naming convention. |
-| **review** | `/review <MR URL>` | Reviews an MR against its tracker ACs: AC-coverage table, findings by severity, team-conventions checklist; writes a review entry to the ticket JSON. |
-| **address-review** | `/address-review PROJ-123` | Reads MR review threads, implements the required changes, verifies the build, and **squashes everything into the original feature commit** (force-push with lease). Gated three times: before touching code, before committing, and before the force-push. |
-| **resolve-conflicts** | `/resolve-conflicts PROJ-123` | Rebases an MR branch onto its fresh target and works through the conflicts. |
-| **prepare-mr** | `/prepare-mr …` | Runs the MR format/convention checks before pushing. |
-| **spike-ticket** | `/spike-ticket PROJ-123` | The two-phase spike research → publish flow (above). |
-| **improve-skills** | `/improve-skills` | Reflects on the session, improves the skills/scripts, and can open a gated MR to share them. |
+| Skill | Usage | What it does | Delegates to (substrate) |
+|---|---|---|---|
+| **sync-repos** | `/sync-repos [api web …]` | Clones any missing repo, then syncs all to their default branch. Dirty changes are auto-stashed and restored. Reports a per-repo status table. | Light: `verification-before-completion` (never "all synced" without the script's own output) · `systematic-debugging`. |
+| **start-stack** | `/start-stack [PROJ-123]` | The **stack bring-up layer** — runs the app locally so verification has something real to run against, and **points the UI at your local build** (a change verified against a deployed backend proves nothing), then reports readiness + URLs. `verify-ticket` invokes it before running specs. | `systematic-debugging` (root-cause a service that won't come up) · `verification-before-completion` (no "ready" without a green probe). |
+| **new-branch** | `/new-branch …` | Creates the feature/bugfix branch across the affected repos, following the naming convention. | Light: `verification-before-completion` (report "branched" only from the script's own output). |
+| **review** | `/review <MR URL \| PROJ-123>` | Reviews MR(s) against the ticket's ACs: AC-coverage table, findings by severity, team-conventions checklist; writes a review entry to the ticket JSON. | `requesting-code-review` (review rigor) · `receiving-code-review` (reconcile prior reviewers) · `verification-before-completion` (every "covered"/"approve" backed by the diff hunk). |
+| **address-review** | `/address-review PROJ-123` | Reads MR review threads, implements the required changes, verifies the build, then commits per your chosen strategy — an **additive second commit** (plain push) or a **squash into the original commit** (force-push with lease). Gated three times: before touching code, before committing, and before the push. | `receiving-code-review` (challenge feedback, don't blindly comply) · `systematic-debugging` · `verification-before-completion`. |
+| **resolve-conflicts** | `/resolve-conflicts PROJ-123` | Rebases an MR branch onto its fresh target and works through the conflicts. | `systematic-debugging` (root-cause the conflict) · `verification-before-completion` (no markers / dropped lines; push actually landed). |
+| **prepare-mr** | `/prepare-mr …` | Runs the MR format/convention checks before pushing. | Light: `verification-before-completion` (call a check PASS only on the script's own PASS lines). |
+| **spike-ticket** | `/spike-ticket PROJ-123` | The two-phase spike research → publish flow (above). | `brainstorming` · `systematic-debugging` · `verification-before-completion`. |
+| **improve-skills** | `/improve-skills` | Reflects on the session, improves the skills/scripts, and can open a gated MR to share them. | `writing-skills` (governs every skill edit) · `systematic-debugging` · `verification-before-completion`. |
 
 ---
 
@@ -126,7 +165,8 @@ stateDiagram-v2
     [*] --> understood : understand-ticket
     understood --> planned : plan-ticket
     planned --> implemented : implement-ticket
-    implemented --> shipped : push-ticket
+    implemented --> implemented : verify-ticket (evidence)
+    implemented --> shipped : push-ticket (evidence approved)
     shipped --> [*] : improve-skills
     understood --> researched : spike · research
     researched --> published : spike · publish
@@ -214,6 +254,10 @@ The skills shell out to these rather than embedding long command sequences:
 | `push-branch.sh` | push-ticket | Push the branch to origin. |
 | `rebase-branch.sh` | resolve-conflicts | Rebase a branch onto its fresh target. |
 | `append-journal.sh` | all lifecycle skills | Append a line to `<ticket>.journal.md`. |
+| `save-state.sh` | all lifecycle skills | Persist `<ticket>.json` (validated, atomic, no approval prompt). |
+| `save-test-guide.sh` | implement-ticket | Persist the manual guide for scenarios that can't be automated. |
+| `ensure-superpowers.sh` | setup | Make the Superpowers substrate plugin present on the machine (user scope, idempotent). |
+| `ensure-e2e.sh` | implement-ticket, verify-ticket | Provision the e2e verification harness into the workspace on first use. |
 | `lib-protected.sh` | scripts | Shared guard helpers (protected-branch / safety checks). |
 | `update-conversation-title.mjs` | complete-ticket, understand-ticket | Set the Claude Code conversation title to the ticket. |
 
@@ -221,22 +265,26 @@ The skills shell out to these rather than embedding long command sequences:
 
 ## Gates & safety (consistent across the flow)
 
-The workflow gates at **every step**, not just at plan and push. There are two kinds: **mandatory**
-gates fire on every happy-path run; **conditional** gates fire only when a specific situation arises.
+The workflow gates at **every step**, not just at plan and push. In short: nothing is saved until you
+confirm the understanding, no code until you approve the plan, nothing committed or pushed until you
+review the evidence and say *"evidence reviewed and approved"* — and it never opens the MR or writes to
+the tracker for you. There are two kinds: **mandatory** gates fire on every happy-path run;
+**conditional** gates fire only when a specific situation arises.
 
 ### Mandatory gates (fire on every run)
 
 | Gate | Where | Rule |
 |---|---|---|
 | **Understand** | understand-ticket | Understanding is not saved to disk until you confirm it ("yes" / "looks good" / "correct"). A question or a correction does **not** count as confirmation. |
-| **Step routing** | complete-ticket | Between every step you are asked before the next skill runs — _"Run /plan-ticket now?"_, _"Run /implement-ticket now?"_, etc. The orchestrator never auto-advances. |
+| **Step routing** | complete-ticket | `understood → plan → implement → verify` auto-advance (each previous skill's own gate already authorized continuing). The orchestrator adds two explicit stops of its own: the **implementation review + evidence** gate before push, and the yes/no offer before the terminal `improve-skills`. |
 | **Plan** | plan-ticket | No code is written until you approve the plan — an **AC-by-AC coverage sign-off**, not a blanket "ok". Any `[partial]`/`[not covered]` AC blocks approval until it's covered or explicitly accepted as out of scope. |
-| **Test** | push-ticket | Nothing is committed, branched, or pushed until you reply "tested and approved". This lock holds even on a resume after `/compact`. |
+| **Verify & evidence** | verify-ticket → complete-ticket → push-ticket | `verify-ticket` runs the specs and emits the evidence pack; nothing is committed, branched, or pushed until you review it and reply "evidence reviewed and approved" at the implementation review gate. Destructive specs need **per-scenario approval** before they run; any post-approval fix voids the approval **and** the evidence — re-verify. This lock holds even on a resume after `/compact`. |
+| **Green gates ≠ done** | complete-ticket | Passing checks don't authorize approval on their own: the review gate confirms the depth checks actually *ran*, and — when a known-good reference exists — **A/B's the produced code against it**. A passing gate over an unexamined diff is process theatre. |
 | **MR creation** | push-ticket | The skill only outputs the MR URL — **you** open the MR. It never calls the Git host's create-MR API. |
 | **Proposal** (spike) | spike-ticket A | The researched proposal is not saved until you approve it. |
 | **Tracker writes** (spike) | spike-ticket B | Publishing needs a separate yes **per item**; a generic "go ahead" approves only the item currently shown. Default is "you paste it". |
 | **Share skills** | improve-skills | Local skill/script edits are applied for you, but an MR to the shared repo opens only on an explicit "open MR". |
-| **Address review** | address-review | Gated **three times**: before touching code ("go ahead"), before committing (the squash gate), and before the force-push ("push"). |
+| **Address review** | address-review | Gated **three times**: before touching code ("go ahead" + commit strategy: additive or squash), before committing, and before the push ("push" — plain push for additive, force-push for squash). |
 | **Resolve conflicts** | resolve-conflicts | The force-push is gated on an explicit "push"; force-push is always `--force-with-lease`. |
 | **Submodules** | all git skills | Submodule pointers are never auto-staged. |
 

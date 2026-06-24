@@ -9,6 +9,34 @@ The fast path is **clone the workflow repo → run `/setup`**.
 
 ---
 
+## 0. Install the Superpowers plugin (once per machine)
+
+The flow runs on a **two-layer architecture**: the lifecycle skills (the domain layer) delegate
+generic engineering discipline to the **[Superpowers](https://github.com/obra/superpowers)** plugin
+(the substrate) via `REQUIRED: superpowers:*` references. It's MIT-licensed, distributed via
+Anthropic's official `claude-plugins-official` marketplace; the only thing it auto-runs is a local
+context-injection hook at session start (no telemetry, no external egress) — pin/review the version
+before bumping.
+
+Installing it is a one-time, per-machine **user action** — Claude can't do it for you. In `claude`, run:
+
+```
+/plugin install superpowers@claude-plugins-official
+/reload-plugins
+```
+
+After this, every workspace `/setup` creates keeps it enabled automatically — the workspace
+`settings.json` from the template sets `enabledPlugins`, so you only install once.
+
+> **Why it's a real prerequisite, not optional polish.** `/setup` has a **Step 0b** that checks for
+> the plugin and prints this install command if it's missing, and `/complete-ticket` warns at flow
+> entry when it isn't loaded. The coupling is **degradable** — without it the flow still runs and every
+> gate is intact; you just lose the substrate disciplines (test-first, evidence-before-claims,
+> systematic debugging, …). So the order for a new dev is: **install Superpowers → run `/setup` → open a
+> workspace and run `/complete-ticket PROJ-123`**.
+
+---
+
 ## 1. Clone and run `/setup`
 
 ```
