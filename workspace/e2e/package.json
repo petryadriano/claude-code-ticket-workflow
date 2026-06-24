@@ -1,0 +1,16 @@
+{
+  "name": "e2e",
+  "private": true,
+  "description": "Automated-verification harness - per-ticket evidence suites (see your verification design doc)",
+  "scripts": {
+    "test": "playwright test --grep-invert \"@external|@destructive\"",
+    "test:all": "playwright test",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "~1.56.0",
+    "@types/mssql": "~9.1.5",
+    "dotenv": "~16.4.5",
+    "mssql": "~11.0.1"
+  }
+}

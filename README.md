@@ -3,10 +3,10 @@
 **A shared Claude Code workspace that takes a ticket from a tracker card to an MR ready to open — and improves itself as the team uses it.**
 
 ![Claude Code](https://img.shields.io/badge/Claude_Code-workspace-8A2BE2)
-![skills](https://img.shields.io/badge/skills-14-2ea44f)
+![skills](https://img.shields.io/badge/skills-15-2ea44f)
 ![substrate](https://img.shields.io/badge/built_on-Superpowers-8A2BE2)
 
-> **About this snapshot.** This is a sanitized, product-agnostic version of an internal Claude Code workflow, shared to illustrate the *pattern* — a gated, resumable, self-improving ticket lifecycle. The skill and script source isn't included; these docs describe the architecture and the practices so you can adapt them to your own stack, issue tracker, and Git host.
+> **About this snapshot.** This is a sanitized, product-agnostic version of an internal Claude Code workflow — the *pattern* of a gated, resumable, self-improving ticket lifecycle. The skills, helper scripts, settings baseline, and e2e harness are **included** (under [`workspace/`](workspace/) and [`.claude/skills/setup`](.claude/skills/setup)); product, tracker, Git-host, and stack specifics are replaced with placeholders for you to adapt to your own. A few reference docs (e.g. the build-diagnostics catalog and the e2e fixtures) keep a concrete **example stack** — clearly marked, meant to be swapped for yours.
 
 These Claude Code skills carry a ticket through its full lifecycle, with a human gate at every step.
 
@@ -99,7 +99,7 @@ flowchart LR
 - **`/sync-repos`** — syncs all your repos to their default branch in one shot.
 - **Survives `/compact`** — decisions are journaled to disk as they happen, so a long ticket never loses the plot.
 
-14 skills in all — including `understand-ticket`, `plan-ticket`, `implement-ticket`, `verify-ticket`, `push-ticket`, `spike-ticket`, `start-stack`, `new-branch`, and `prepare-mr`.
+15 skills in all (plus the one-shot `/setup` that provisions everything) — including `understand-ticket`, `plan-ticket`, `implement-ticket`, `verify-ticket`, `push-ticket`, `spike-ticket`, `start-stack`, `new-branch`, and `prepare-mr`.
 
 ---
 

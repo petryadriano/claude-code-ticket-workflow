@@ -1,0 +1,186 @@
+{
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "additionalDirectories": [],
+    "allow": [
+      "Bash(git *)",
+      "Bash(GIT_EDITOR=true git *)",
+      "Bash(bash *)",
+      "Bash(node *)",
+      "Bash(python *)",
+      "Bash(python3 *)",
+      "Bash(dotnet *)",
+      "Bash(docker *)",
+      "Bash(xargs grep *)",
+      "Bash(xargs head *)",
+      "Bash(cd *)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(grep *)",
+      "Bash(egrep *)",
+      "Bash(rg *)",
+      "Bash(find *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(wc *)",
+      "Bash(sed *)",
+      "Bash(awk *)",
+      "Bash(sort *)",
+      "Bash(uniq *)",
+      "Bash(tr *)",
+      "Bash(cut *)",
+      "Bash(echo *)",
+      "Bash(printf *)",
+      "Bash(tee *)",
+      "Bash(date *)",
+      "Bash(diff *)",
+      "Bash(cmp *)",
+      "Bash(which *)",
+      "Bash(npx *)",
+      "Bash(npm *)",
+      "Bash(sleep *)",
+      "Bash(timeout *)",
+      "Bash(curl *)",
+      "Bash(rm *)",
+      "Bash(rmdir *)",
+      "Bash(cp *)",
+      "Bash(mv *)",
+      "Bash(mkdir *)",
+      "Bash(xargs *)",
+      "Bash(kill *)",
+      "Bash(taskkill *)",
+      "Bash(gh *)",
+      "Bash(jq *)",
+      "Bash(base64 *)",
+      "Bash(nslookup *)",
+      "Bash(env *)",
+      "Bash(export *)",
+      "Bash(true)",
+      "PowerShell(git *)",
+      "PowerShell(dotnet *)",
+      "PowerShell(docker *)",
+      "PowerShell(Copy-Item *)",
+      "PowerShell(New-Item *)",
+      "PowerShell(Rename-Item *)",
+      "PowerShell(Test-Path *)",
+      "PowerShell(Get-ChildItem *)",
+      "PowerShell(Get-Content *)",
+      "PowerShell(Get-Command *)",
+      "PowerShell(Get-Item *)",
+      "PowerShell(Get-Date *)",
+      "PowerShell(Join-Path *)",
+      "PowerShell(Set-Content *)",
+      "PowerShell(Out-File *)",
+      "PowerShell(Add-Content *)",
+      "PowerShell(Clear-Content *)",
+      "PowerShell(Remove-Item *)",
+      "PowerShell(curl *)",
+      "PowerShell(Invoke-WebRequest *)",
+      "PowerShell(Invoke-RestMethod *)",
+      "PowerShell(Test-NetConnection *)",
+      "PowerShell(Start-Process *)",
+      "PowerShell(Stop-Process *)",
+      "PowerShell(Start-Sleep *)",
+      "PowerShell(Set-Location *)",
+      "PowerShell(Select-Object *)",
+      "PowerShell(Where-Object *)",
+      "PowerShell(ForEach-Object *)",
+      "PowerShell(Measure-Object *)",
+      "PowerShell(ConvertFrom-Json *)",
+      "PowerShell(ConvertTo-Json *)",
+      "PowerShell(taskkill *)",
+      "Edit(.claude/tickets/**)",
+      "Write(.claude/tickets/**)",
+      "Edit(**)",
+      "Write(**)",
+      "Read(**)",
+      "Agent",
+      "Task",
+      "Monitor",
+      "Skill(complete-ticket)",
+      "Skill(understand-ticket)",
+      "Skill(plan-ticket)",
+      "Skill(implement-ticket)",
+      "Skill(verify-ticket)",
+      "Skill(push-ticket)",
+      "Skill(review)",
+      "Skill(address-review)",
+      "Skill(resolve-conflicts)",
+      "Skill(prepare-mr)",
+      "Skill(new-branch)",
+      "Skill(sync-repos)",
+      "Skill(spike-ticket)",
+      "Skill(improve-skills)",
+      "mcp__git_host__search",
+      "mcp__git_host__semantic_code_search",
+      "mcp__git_host__get_merge_request",
+      "mcp__git_host__get_merge_request_diffs",
+      "mcp__git_host__get_merge_request_conflicts",
+      "mcp__git_host__get_workitem_notes",
+      "mcp__tracker__get_issue",
+      "mcp__tracker__get_issue_remote_links",
+      "mcp__tracker__search_issues",
+      "mcp__tracker__get_wiki_page",
+      "mcp__tracker__search",
+      "mcp__tracker__fetch",
+      "WebSearch",
+      "WebFetch",
+      "WebFetch(domain:tracker.example.com)",
+      "WebFetch(domain:git.example.com)",
+      "WebFetch(domain:docs.example.com)",
+      "WebFetch(domain:claude.com)",
+      "Read(~/.claude/projects/**/memory/**)",
+      "Edit(~/.claude/projects/**/memory/**)",
+      "Write(~/.claude/projects/**/memory/**)"
+    ],
+    "ask": [
+      "mcp__git_host__create_merge_request",
+      "mcp__tracker__create_issue",
+      "mcp__tracker__edit_issue",
+      "mcp__tracker__add_comment_to_issue",
+      "mcp__tracker__add_worklog_to_issue",
+      "mcp__tracker__create_issue_link",
+      "mcp__tracker__transition_issue",
+      "mcp__tracker__create_wiki_page",
+      "mcp__tracker__update_wiki_page",
+      "mcp__tracker__create_wiki_footer_comment",
+      "mcp__tracker__create_wiki_inline_comment"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/scripts/lifecycle-autoapprove.mjs\""
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/scripts/title-hook.mjs\""
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/scripts/title-hook.mjs\""
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {
+    "superpowers@claude-plugins-official": true
+  }
+}
