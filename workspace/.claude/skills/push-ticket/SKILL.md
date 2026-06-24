@@ -241,7 +241,7 @@ Compare the working tree against `implementation.files_changed` from the state f
 - Files in working tree changes but NOT in `files_changed` → surface them: "Found unexpected changes in <file> — should this be staged?"
   Wait for user to confirm yes/no for each unexpected file before staging.
 
-  **Common noise files that are almost always excluded** (group them and offer "exclude all" rather than asking one-by-one): local run/launch configs, environment/app settings files, lock files (e.g. `package-lock.json`), local certs. Only ask individually for real source files (e.g. `.cs`, `.ts`, `.tsx`, `.sql`) not in the plan.
+  **Common noise files that are almost always excluded** (group them and offer "exclude all" rather than asking one-by-one): local run/launch configs, environment/app settings files, lock files (e.g. `package-lock.json`), local certs. Only ask individually for real source files (your code, markup, or SQL) not in the plan.
 
 **DB script check** (database repo only):
 For each DB script file in `implementation.files_changed`, open it with the **Read tool** and confirm it has real content — not an empty file or a leftover stub.

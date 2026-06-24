@@ -1,33 +1,30 @@
-# Build & type-check diagnostics (.NET + UI)
+# Build & type-check diagnostics
 
-Reference for **implement-ticket Step 4 (Build check)**. Load this when a `dotnet build`,
-`npx tsc`, or lint run produces output you are not sure how to read.
-
-> **EXAMPLE STACK.** This catalog is written for a **.NET + UI** stack as a concrete example of
-> *what a build-diagnostics reference looks like* — replace its error signatures with your own
-> stack's (the "real error vs. environmental noise" discipline is what transfers, not the specific
-> `MSB####` codes).
+Reference for **implement-ticket Step 4 (Build check)**. Load this when a build, type-check, or lint
+run produces output you are not sure how to read.
 
 > **The general discipline — read the COMPLETE error output and find the root cause before
 > writing any fix — is delegated.** **REQUIRED: superpowers:systematic-debugging.** This file is
-> only the .NET-specific layer on top of it: which lines are real compile errors versus
-> environmental noise, so you don't "fix" code that was never broken.
+> only the layer on top of it: how to tell real compile errors from environmental noise, so you
+> don't "fix" code that was never broken. The failure classes below are described generically —
+> substitute your own stack's exact error strings (the discipline transfers, not the signatures).
 
-## .NET build — what counts as a real error
+## Build — what counts as a real error
 
 ```bash
-dotnet build "$WORKSPACE_ROOT/<repo>/<Repo>.sln" --no-restore 2>&1 | grep -E "error CS|^\s+[0-9]+ Error\(s\)" | head -30
+<build command>   2>&1 | tee "$WORKSPACE_ROOT/build.log"   # capture the FULL log — do NOT pipe through `| tail -N`
 ```
 
-Build is clean when `grep "error CS"` returns nothing **and** the Error count shows `0 Error(s)`.
-Only `error CS####` lines are real compilation failures.
+The build is clean only when it reports **zero** real compile errors. Capture the full output (piping
+through `| tail` hides real error lines behind noise), then scan it for your compiler's actual error
+signature. Distinguish these classes:
 
-| Output | What it actually is | What to do |
+| Output class | What it actually is | What to do |
 |---|---|---|
-| `MSBUILD : error : Building target...` | Incremental-build diagnostic, **not** a compile error | Ignore; look for `error CS####` |
-| `MSB3027: Could not copy ... because it is being used by another process` | **File-lock**, not a compile error — another process (e.g. the running API) holds the DLLs | Kill the running process, rebuild. Never treat as a code error. |
-| `MSB3492: Could not read existing file "obj\...cache"` (+ `Building target "CoreCompile" completely`) | **obj-cache lock** — usually an IDE or leftover MSBuild worker nodes holding incremental caches | `dotnet build-server shutdown`, then rebuild with `-nodeReuse:false`. Do **not** capture build output through `\| tail -N` — that hides the real `error CS####` lines behind cache-lock noise; write the full log to a file and `grep -E ': error \|error CS'`. |
-| `N Error(s)` with **zero** `error CS####` lines | Transient restore/lock state, typically right after a pull or fresh restore | Re-run the build once. Only a *repeatable* count with visible `error CS`/`: error` lines is real. |
+| Build-tool / target chatter that is **not** a compile error | Incremental-build diagnostics from the build tool, not your code | Ignore; look only for the real compile-error lines. |
+| **File-lock** error ("could not copy/write … in use by another process") | A running process (e.g. the app you started) is holding the built binaries | Stop that process, then rebuild. Never treat as a code error. |
+| **Stale-cache / incremental-build** error (can't read a cache/temp file, "rebuilding completely") | A stale incremental-build cache, or a leftover build-server / worker process holding caches | Clear the build cache / restart the build server, then rebuild. Write the FULL log to a file and grep for real errors — cache noise otherwise buries them. |
+| A nonzero **error count with no actual error lines** | Transient restore/lock state, typically right after a pull or a fresh dependency restore | Re-run the build once. Only a *repeatable* count with visible error lines is real. |
 
 **Pre-existing compile break in an upstream file unrelated to the ticket** — before hand-fixing it,
 check whether an in-flight upstream commit already fixes it (`git -C <repo> log origin/<base> --oneline -- <file>`
@@ -36,35 +33,31 @@ tests live in the same project), keep the fix minimal, journal it, and expect it
 push-time sync** — be ready to drop it from the commit scope rather than ship a duplicate of the owning
 team's fix.
 
-**LSP/IDE diagnostics are NOT the build authority.** The editor's LSP may report spurious
-`type or namespace name 'X' could not be found` / "are you missing an assembly reference" on **every**
-`using` when the solution hasn't been restored in the
-LSP session — it looks like your edit broke the whole file. It's noise, not compile errors. Trust ONLY the
-`dotnet build` output (`error CS####` / `N Error(s)`); never edit code to "fix" an LSP diagnostic that
-`dotnet build` does not also report.
+**LSP/IDE diagnostics are NOT the build authority.** The editor's language server may report spurious
+"type/name could not be found" / "missing reference" errors on **every** import when the project hasn't
+been restored/indexed in the LSP session — it looks like your edit broke the whole file. It's noise, not
+compile errors. Trust ONLY the actual `<build command>` output; never edit code to "fix" an LSP diagnostic
+that the build does not also report.
 
-## UI type-check & lint
+## Type-check & lint (UI / frontend changes)
 
 ```bash
-npx tsc --noEmit -p "$WORKSPACE_ROOT/web/tsconfig.json" 2>&1 | tail -20
+<type-check command>   2>&1 | tail -20
 ```
-TypeScript type errors are caught here — do not skip even if no `.tsx` file was created (existing types may
-have been broken).
+Type errors are caught here — do not skip even if no new component file was created (existing types may
+have been broken by your change).
 
-If the change touched a UI SPA, run **ESLint**. This catches
-import-ordering (`eslint-plugin-simple-import-sort`), unused vars, and the other rules that otherwise surface
-only at review — `npx tsc` does **not** cover them, so do not skip this even when build and type-check are clean:
+If the change touched a UI/frontend module, also run your **linter** — it catches import-ordering, unused
+vars, and the other rules that surface only at review; the type-checker does **not** cover them, so don't
+skip it even when build and type-check are clean:
 ```bash
-(cd "$WORKSPACE_ROOT/web/<spa>" && npm run lint)
+<lint command>
 ```
-If the change **also** touched any `.scss`, additionally run **stylelint**:
-```bash
-(cd "$WORKSPACE_ROOT/web/<spa>" && npm run slint)
-```
-Append `-- --fix` to either command (e.g. `npm run lint -- --fix`) to auto-apply the fixable violations,
-then re-run to confirm clean. **Scope the result to your change:** `--fix` (especially stylelint's
-`order/properties-order`) will also rewrite **pre-existing** violations elsewhere in a file you touched — keep
-only the fixes on the lines this ticket changed and revert unrelated reorders, so the diff stays scoped to the ticket.
+If the change **also** touched styles, additionally run your **style-linter** (`<style-lint command>`).
+Most linters accept a `--fix` flag to auto-apply fixable violations; re-run to confirm clean. **Scope the
+result to your change:** `--fix` (especially style-ordering rules) will also rewrite **pre-existing**
+violations elsewhere in a file you touched — keep only the fixes on the lines this ticket changed and revert
+unrelated reorders, so the diff stays scoped to the ticket.
 
 ## "UI change not appearing" protocol
 
@@ -72,10 +65,9 @@ If a UI change you made doesn't show up in the running app, verify **objectively
 build / cached bundle" (this is the local instance of the evidence rule —
 **REQUIRED: superpowers:verification-before-completion**):
 
-1. Grep the built bundle / `dist` for the new symbol (component name, class, label) — is the edit actually compiled in?
-2. Confirm the dev server / watcher was restarted (or HMR fired) **after** the edit.
-3. Confirm any gating feature flag is actually `true` in the running store (Redux DevTools `auth` slice),
-   not just set in the dev env form.
+1. Grep the built bundle / output dir for the new symbol (component name, class, label) — is the edit actually compiled in?
+2. Confirm the dev server / watcher was restarted (or hot-reload fired) **after** the edit.
+3. Confirm any gating feature flag is actually `true` in the running app's state, not just set in the dev env form.
 
 Never insist a change is present (or that an image is "identical / stale") against the user's direct
 observation — get objective evidence first, and if the user reports seeing something different, trust that

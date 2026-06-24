@@ -221,23 +221,23 @@ Call `EnterPlanMode` now. The full session context is already loaded — tracker
 ```
 ─── api ──────────────────────────────────────────────────────────────
 
-  Modify: src/Features/Foo/FooHandler.cs  [AC 1, AC 2]
+  Modify: src/Features/Foo/FooHandler  [AC 1, AC 2]
     Add method `HandleAsync(FooCommand command)`. Follows the existing
     CQRS handler pattern in this folder. Must call `_fooRepository.SaveAsync()`
     and return the mapped `FooDto`. Guard against null entity — throw
-    `NotFoundException` if not found (matches pattern in BarHandler.cs).
+    `NotFoundException` if not found (matches pattern in BarHandler).
 
-  Create: src/Features/Foo/FooDto.cs  [AC 2]
+  Create: src/Features/Foo/FooDto  [AC 2]
     New response DTO: Id (int), Name (string), Status (FooStatus).
     Place in the same namespace as other DTOs in this feature folder.
 
-  Modify: Program.cs  [DI]
+  Modify: app startup / DI registration  [DI]
     Register `IFooService` → `FooService` as scoped (matches all other
     services in this file).
 
 ─── web ───────────────────────────────────────────────────────────────
 
-  Modify: src/components/FooPanel/FooPanel.tsx  [AC 1]
+  Modify: src/components/FooPanel/FooPanel  [AC 1]
     Add a `status` badge below the title using the existing `StatusBadge`
     component from `src/components/common/StatusBadge`. Pass `status`
     from the API response (already in FooPanelDto from the dependency).
@@ -281,8 +281,8 @@ Confirm coverage for each AC before I save the plan. Go through them and reply
 not actually covered. This is a real check, not a rubber stamp — it's the cheapest
 point to catch a wrong approach.
 
-  AC 1 — <short text>  → api/.../Foo.cs (adds HandleAsync)     [covered]
-  AC 2 — <short text>  → web/.../Bar.tsx (renders badge)       [covered]
+  AC 1 — <short text>  → api/.../Foo (adds HandleAsync)     [covered]
+  AC 2 — <short text>  → web/.../Bar (renders badge)       [covered]
   AC 3 — <short text>  → nothing yet                           [not covered]
 ```
 
@@ -313,12 +313,12 @@ After the user approves the plan in Step 7, extract the structured data from the
     "commit": "PROJ-XXX Verb Title",
     "repos": ["api", "web"],
     "changes": [
-      { "repo": "api", "action": "Modify", "file": "src/path/File.cs", "reason": "...", "acs": [1, 2] },
-      { "repo": "web", "action": "Modify", "file": "src/Component.tsx", "reason": "...", "acs": [1] }
+      { "repo": "api", "action": "Modify", "file": "src/path/File", "reason": "...", "acs": [1, 2] },
+      { "repo": "web", "action": "Modify", "file": "src/Component", "reason": "...", "acs": [1] }
     ],
     "ac_coverage": {
-      "AC 1 full text": ["api/src/path/File.cs", "web/src/Component.tsx"],
-      "AC 2 full text": ["api/src/path/File.cs"]
+      "AC 1 full text": ["api/src/path/File", "web/src/Component"],
+      "AC 2 full text": ["api/src/path/File"]
     },
     "acs_out_of_scope": [],
     "authorization": "<approach>",

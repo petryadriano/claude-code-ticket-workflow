@@ -87,7 +87,7 @@ For each file written or modified, re-read 5–10 lines of surrounding existing 
 - [ ] Private helper methods called from exactly one place and ≤3 lines — inline unless the name adds meaningful clarity
 
 ## Frontend / React checklist (UI SPAs — apply only if this ticket changed a SPA)
-The checklists above are .NET-shaped; for a React/SPA change, also verify:
+The checklists above are backend-shaped; for a UI/SPA change, also verify:
 - [ ] **Stable references into pure children.** Handlers/objects/arrays passed to `PureComponent`/`React.memo` children are stable across renders (class methods or `useCallback`/`useMemo`), not created inline — an inline `() => …` or `{…}` defeats the memo and can break expected re-render behavior.
 - [ ] **Async request races.** Every fetch that can be superseded (typeahead, refetch-on-filter-change) guards against out-of-order responses — `AbortController` or a sequence/`latest` ref — and the guard is applied to **every** such path in the change, not just one.
 - [ ] **Reuse existing helpers/components first.** Grep the SPA's `api/`, `utils/`, `elements/`, shared `apps/` for an existing helper or component (e.g. a JSON-casing reader, a shared Input/Select/Button/Modal/Icon) before writing your own.
@@ -111,13 +111,13 @@ The checklists above are .NET-shaped; for a React/SPA change, also verify:
 Self-review complete.
 
 AUTO-FIXED (HIGH):
-  - api/src/path/File.cs:42 — <what and why>
+  - api/src/path/File:42 — <what and why>
 
 MEDIUM (your call):
-  - api/src/path/File.cs:87 — <issue>
+  - api/src/path/File:87 — <issue>
 
 LOW (deferred):
-  - api/src/path/File.cs:12 — <note>
+  - api/src/path/File:12 — <note>
 ```
 
 - **HIGH** — auto-fix and list every fix with file, line, and reason

@@ -6,7 +6,7 @@
 ![skills](https://img.shields.io/badge/skills-15-2ea44f)
 ![substrate](https://img.shields.io/badge/built_on-Superpowers-8A2BE2)
 
-> **About this snapshot.** This is a sanitized, product-agnostic version of an internal Claude Code workflow — the *pattern* of a gated, resumable, self-improving ticket lifecycle. The skills, helper scripts, settings baseline, and e2e harness are **included** (under [`workspace/`](workspace/) and [`.claude/skills/setup`](.claude/skills/setup)); product, tracker, Git-host, and stack specifics are replaced with placeholders for you to adapt to your own. A few reference docs (e.g. the build-diagnostics catalog and the e2e fixtures) keep a concrete **example stack** — clearly marked, meant to be swapped for yours.
+> **About this snapshot.** This is a sanitized, product-agnostic version of an internal Claude Code workflow — the *pattern* of a gated, resumable, self-improving ticket lifecycle. The skills, helper scripts, settings baseline, and e2e harness are **included** (under [`workspace/`](workspace/) and [`.claude/skills/setup`](.claude/skills/setup)); product, tracker, Git-host, and stack specifics are replaced with placeholders (`<build command>`, `<repo>`, …) for you to adapt to your own. The e2e example fixtures carry placeholder selectors/paths — clearly marked, meant to be swapped for your app.
 
 These Claude Code skills carry a ticket through its full lifecycle, with a human gate at every step.
 

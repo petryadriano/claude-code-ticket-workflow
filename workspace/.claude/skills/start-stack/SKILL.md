@@ -89,7 +89,7 @@ To make this a real **verification** surface (not just frontend poking), wire it
   env's backend is acceptable — the UI in the `--build local` image is still your working-tree code.)
 - If the config reads cloud credentials, give the container creds (mount the host cloud-config dir or pass
   exported credentials as env); set a local-only
-  a local-only domain-override setting (= `<your-domain>`) in `appsettings.<env>.json` for environment
+  a local-only domain-override setting (= `<your-domain>`) in your per-environment config file for environment
   resolution. **That override is a debug-only edit — do NOT commit it / add it to `files_changed`.**
 - **Point the harness at it:** `E2E_UI_URL=https://localhost:<hostPort>` and
   `E2E_UI_PATH=/{environment}/<ui-route>/{recordId}/{versionId}` in `e2e/.env`.
@@ -103,19 +103,17 @@ To make this a real **verification** surface (not just frontend poking), wire it
 
 This is what worked end-to-end against a real QA environment — use it as the concrete default:
 
-1. **Local API** — run from the PROJECT dir (so the ContentRoot loads `appsettings.local.json`, which
-   holds the secret SDK key; without it startup throws `Missing <feature-flag>:SdkKey`):
+1. **Local API** — run from the PROJECT dir (so it loads your local config file — which holds any
+   secret keys; without it startup may fail):
    ```bash
-   ASPNETCORE_ENVIRONMENT=<qa-env> ASPNETCORE_URLS=https://localhost:<api-port> \
-     dotnet run --project "$WORKSPACE_ROOT/api/<Api.Project>" --no-launch-profile
+   APP_ENV=<qa-env> APP_URL=https://localhost:<api-port> <run command for your API>   # started from the project dir
    ```
-   In `<qa-env>` it loads QA config and resolves QA environments from the request
+   In `<qa-env>` it loads QA config and resolves the target environment from the request
    token. **No local auth needed** — `E2E_AUTH_URL` points at the deployed QA auth (the token lands
-   in the shared auth DB).
-   - *Gotcha (secure workspaces):* a freshly-built apphost `.exe` can be EDR/AV-blocked
-     (`...Api.exe ... Access is denied`). Unblock it once, **or** run the built DLL via the dotnet host —
-     but still **from the project dir** (running `dotnet bin/.../*.dll` from elsewhere gets the wrong
-     ContentRoot, so `appsettings.local.json` / the SDK key won't load).
+   in the shared auth store).
+   - *Gotcha (secure workspaces):* a freshly-built binary can be EDR/AV-blocked ("Access is denied").
+     Unblock it once, **or** run it via your runtime's host — but still **from the project dir**
+     (launching from elsewhere can resolve the wrong working directory, so your local config won't load).
 2. **UI dev server (for UI specs)** — `npm install` once, then run the **dev** server (NOT
    `npm start`, which is a *production* serve that 404s on a missing `dist/`):
    ```bash

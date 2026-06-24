@@ -251,7 +251,7 @@ Read each target file, then apply the change. Trace back to comment number after
 
 Do not change files not in the plan. If a side-effect requires touching another file, stop and ask.
 
-**Scoped fixes only.** Touch only what the review comment requires. Do **not** sweep-fix pre-existing issues in a file you're editing — in particular a `--fix` lint/stylelint run can reorder or rewrite **unrelated pre-existing** lines (e.g. `order/properties-order` across a whole `.scss`); keep only the changes on the lines your fix touches and revert the rest, or the diff balloons with churn the reviewer didn't ask for.
+**Scoped fixes only.** Touch only what the review comment requires. Do **not** sweep-fix pre-existing issues in a file you're editing — in particular a `--fix` linter/style-linter run can reorder or rewrite **unrelated pre-existing** lines (e.g. ordering rules applied across a whole stylesheet); keep only the changes on the lines your fix touches and revert the rest, or the diff balloons with churn the reviewer didn't ask for.
 
 **Minimal mechanism over structural improvement.** For each fix, prefer the smallest change that genuinely resolves the comment (often one guard/condition) over a restructure that *also* prevents the bug class — a review round is the wrong time to relocate ownership or rewire components. If a structural fix seems genuinely better, present both ("1-line guard" vs "restructure, +N/−M lines") and let the user choose; default to minimal.
 

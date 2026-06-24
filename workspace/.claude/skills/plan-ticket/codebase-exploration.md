@@ -29,7 +29,7 @@ DB-script checks, and the per-label expansions.
 - Find the domain entities, services, controllers, or components this ticket touches
 - Find the files introduced by done dependencies (from state) — the current solution must integrate with them, not duplicate or contradict them
 - Check epic constraints that restrict the approach
-- Identify all hidden files likely to need updating beyond the obvious ones: DI registrations (`Program.cs` / `Startup.cs`), feature flag config, `appsettings.*.json` for all environments, swagger/OpenAPI definitions, route tables
+- Identify all hidden files likely to need updating beyond the obvious ones: DI / service registrations (your app's bootstrap/startup), feature-flag config, per-environment config files, API/OpenAPI definitions, route tables
 
 ## Verify consumed contracts against the producer's real code — including in-flight branches
 
@@ -84,7 +84,7 @@ and record the consumer-side follow-up in the plan rather than bending this tick
 
 ## If `Configuration` label
 
-- Identify all `appsettings.*.json` files across all environments that need updating
+- Identify all per-environment config files across all environments that need updating
 
 ## If ticket involves events, notifications, or async operations
 

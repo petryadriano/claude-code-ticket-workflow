@@ -173,7 +173,7 @@ in is the load-bearing decision** — and the first approach that compiles is of
 - Follows naming conventions from the repo's `CLAUDE.md` (`_camelCase` private fields, `PascalCase` consts, braces on all blocks)
 - Every new construct matches the style of the surrounding existing code (see pattern matching above)
 - No hardcoded secrets, connection strings, or environment-specific URLs
-- New services, handlers, validators, or consumers are registered in DI — check `Program.cs` or equivalent and add registration if missing
+- New services, handlers, validators, or consumers are registered in DI — check your app's startup / DI registration and add it if missing
 - If `Configuration` label: all relevant app-settings files are updated
 
 **Out-of-plan changes** (DI registrations, app settings, etc.): note them explicitly, and immediately add them to `implementation.files_changed` in the state file so push-ticket stages them correctly. When the out-of-plan change reflects a non-obvious decision (e.g. deviating from the plan's approach because it didn't work), journal it:
@@ -207,19 +207,19 @@ After each repo is done, update `implementation.repos_done` in the state file.
 
 Run for each repo (skip repos already in `repos_done` before this run).
 
-**.NET repos:**
+**Backend repos:**
 ```bash
-dotnet build "$WORKSPACE_ROOT/<repo>/<Repo>.sln" --no-restore 2>&1 | grep -E "error CS|^\s+[0-9]+ Error\(s\)" | head -30
+<build command>   2>&1 | tee build.log   # capture the FULL log (don't pipe through `| tail`), then scan for real compile errors
 ```
-Build is clean when `grep "error CS"` returns nothing and the Error count shows `0 Error(s)`.
+Build is clean when it reports zero real compile errors.
 
-**UI (if in plan.repos):**
+**UI / frontend (if in plan.repos):**
 ```bash
-npx tsc --noEmit -p "$WORKSPACE_ROOT/web/tsconfig.json" 2>&1 | tail -20
+<type-check command>   2>&1 | tail -20
 ```
-TypeScript type errors are caught here — do not skip even if no .tsx file was created (existing types may have been broken). If the change touched a UI SPA, also run **ESLint** (`npm run lint`), and **stylelint** (`npm run slint`) if any `.scss` changed — `npx tsc` does not cover those rules.
+Type errors are caught here — do not skip even if no new component file was created (existing types may have been broken). If the change touched a UI module, also run your **linter** (`<lint command>`), and your **style-linter** (`<style-lint command>`) if any styles changed — the type-check does not cover those rules.
 
-> **When build / type-check / lint output is ambiguous, read [build-diagnostics.md](build-diagnostics.md)** — the .NET-specific guide to telling real `error CS####` failures from environmental noise (`MSBUILD` target lines, `MSB3027` file-locks, `MSB3492` obj-cache locks, transient `N Error(s)` with no detail, pre-existing upstream breaks, LSP false positives), the `--fix` scoping rule, and the "UI change not appearing" protocol.
+> **When build / type-check / lint output is ambiguous, read [build-diagnostics.md](build-diagnostics.md)** — the guide to telling real compile failures from environmental noise (file-locks, stale incremental-build caches, transient error counts with no detail, pre-existing upstream breaks, LSP false positives), the `--fix` scoping rule, and the "UI change not appearing" protocol.
 
 If any build or type check fails: **REQUIRED: superpowers:systematic-debugging** — read the complete error output and understand the root cause before writing any fix. Fix errors before proceeding.
 
@@ -245,12 +245,12 @@ Every test class must cover:
 - **All distinct outcomes** (if the class persists status logs at multiple exit points) — one test per reachable status value; do not leave `Processed` or `PartiallyProcessed` untested when skip/error paths are covered
 
 ```bash
-dotnet test "$WORKSPACE_ROOT/<repo>/<Repo>.Tests.csproj" 2>&1 | tail -20
+<test command>   2>&1 | tail -20
 ```
 
 If tests fail: **REQUIRED: superpowers:systematic-debugging** — read the complete output, identify root cause, fix implementation or test, re-run. Do not proceed until all pass.
 
-Skip for: database SQL-only changes, UI TypeScript/React changes, trivial config-only changes.
+Skip for: database/SQL-only changes, UI-only changes, trivial config-only changes.
 
 **After all tests pass → go directly to Step 6.**
 
@@ -434,7 +434,7 @@ Update `$WORKSPACE_ROOT/.claude/tickets/<ticket>.json`. Set `flow` to `null` —
   "phase": "implemented",
   "implementation": {
     "repos_done": ["api", "web"],
-    "files_changed": ["api/src/path/File.cs", "api/Program.cs", "web/src/Component.tsx"],
+    "files_changed": ["api/src/path/File", "api/src/startup", "web/src/Component"],
     "tests_passed": true,
     "build_passed": true,
     "ac_validation": [

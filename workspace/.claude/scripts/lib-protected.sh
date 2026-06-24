@@ -12,7 +12,7 @@
 # Files matching this pattern are personal dev config — never committed, always preserved.
 # Replace these globs with whatever local-only config your stack produces (IDE settings,
 # local run profiles, lockfiles, certs, the .claude/ workspace dir, etc.).
-NOISE_PATTERN="(launchSettings\.json|appsettings.*\.json|\.claude/|certs/|package-lock\.json|\.user)"
+NOISE_PATTERN="(\.local\.|\.env|\.claude/|certs/|package-lock\.json|\.user)"
 
 # Exclude noise files from the dirty check so they don't trigger a stash.
 is_dirty() {
