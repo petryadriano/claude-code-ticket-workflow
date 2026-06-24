@@ -1,0 +1,12 @@
+# Shell + Node helper scripts MUST be LF on every platform.
+# They run under bash (Git Bash on Windows, /bin/bash on macOS/Linux) and node;
+# a CRLF line ending makes bash fail with `bad interpreter: /usr/bin/env bash^M`
+# or `$'\r': command not found` on macOS/Linux. Pin them to LF regardless of a
+# developer's core.autocrlf setting so a Windows commit can never break a Mac checkout.
+*.sh   text eol=lf
+*.bash text eol=lf
+*.mjs  text eol=lf
+
+# Markdown / JSON: normalize to LF in the repo (functionally irrelevant, keeps diffs clean).
+*.md   text eol=lf
+*.json text eol=lf

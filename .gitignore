@@ -1,0 +1,21 @@
+# OS / editor artifacts
+desktop.ini
+Thumbs.db
+.DS_Store
+*.swp
+.idea/
+.vs/
+
+# Personal Claude approval cache — regenerated every session, never commit.
+**/.claude/settings.local.json
+
+# Per-developer runtime state (lives in the provisioned workspaces, never the shared repo).
+**/.claude/tickets/
+**/.claude/title-state/
+
+# e2e: per-developer secrets + installed deps
+**/e2e/.env
+**/e2e/.login
+**/e2e/node_modules/
+**/e2e/test-results/
+**/e2e/playwright-report/
